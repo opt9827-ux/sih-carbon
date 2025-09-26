@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Carbon Offset Validation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.css') }}"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='leaflet.draw.css') }}"/>
+    
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background-color: #f8f9fa; }
+        #map { height: 500px; width: 80%; max-width: 1000px; border: 1px solid #ccc; border-radius: 8px; }
+        .date-picker-container { margin: 20px 0; display: flex; gap: 20px; align-items: center; justify-content: center; padding: 15px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .date-picker-container label { font-weight: bold; }
+        .date-picker-container input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        #results { margin-top: 20px; width: 80%; max-width: 1200px; }
+        #results-container { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 30px; margin-top: 20px; }
+        #socMap { flex: 2; min-width: 500px; max-width: 65%; border: 1px solid #ddd; border-radius: 8px; }
+        #results-text { flex: 1; min-width: 300px; max-width: 30%; text-align: left; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        #results-text h3 { margin-top: 0; text-align: center; color: #333; }
+        #results-text p { margin: 12px 0; font-size: 1.1em; color: #555; display: flex; justify-content: space-between; }
+        #results-text span { font-weight: bold; color: #3498db; }
+        #offset-value { font-size: 1.2em; text-align: center; padding-top: 10px; }
+        #offset-value span { font-weight: bold; }
+        #loader { display: none; font-size: 1.2em; text-align: center; }
+        .nav { width: 80%; max-width: 1000px; text-align: right; padding-bottom: 10px;}
+        .nav a { margin-left: 20px; text-decoration: none; color: #3498db; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+        <a href="{{ url_for('logout') }}">Log Out</a>
+    </div>
+    <h1>Carbon Offset Validation</h1>
+    <div class="date-picker-container">
+        <div>
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" name="start_date">
+        </div>
+        <div>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" name="end_date">
+        </div>
+    </div>
+    <p>Select a time period, then draw a rectangle on the map to validate.</p>
+    <div id="map"></div>
+    <div id="results">
+        <h2>Validation Report</h2>
+        <div id="loader">Processing... this may take a moment.</div>
+        <div id="results-container">
+            <img id="socMap" src="" alt="Comparison maps will appear here"/>
+            <div id="results-text">
+                <h3>Analysis Details</h3>
+                <p>Carbon at Start Date (Est.): <span id="startTons">...</span></p>
+                <p>Carbon at End Date (Est.): <span id="endTons">...</span></p>
+                <hr>
+                <p id="offset-value">Net Carbon Offset (Est.): <span id="offsetTons">...</span></p>
+                <p id="offset-value">Value of Offset (1 Ton = 1 Token = $5): <span id="value">...</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='leaflet.js') }}"></script>
+    <script src="{{ url_for('static', filename='leaflet.draw.js') }}"></script>
+    <script>
+        const map = L.map('map').setView([17.3850, 78.4867], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        const drawnItems = new L.FeatureGroup();
+        map.addLayer(drawnItems);
+
+        const drawControl = new L.Control.Draw({
+            draw: { polygon: false, polyline: false, circle: false, marker: false, circlemarker: false, rectangle: { shapeOptions: { color: '#f357a1' } } },
+            edit: { featureGroup: drawnItems }
+        });
+        map.addControl(drawControl);
+
+        map.on(L.Draw.Event.CREATED, function (event) {
+            const layer = event.layer;
+            drawnItems.clearLayers();
+            drawnItems.addLayer(layer);
+            const bounds = layer.getBounds();
+            const coords = [ [bounds.getWest(), bounds.getSouth()], [bounds.getEast(), bounds.getNorth()] ];
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            if (!startDate || !endDate) {
+                alert("Please select both a start and an end date.");
+                return;
+            }
+            if (new Date(startDate) >= new Date(endDate)) {
+                alert("The start date must be before the end date.");
+                return;
+            }
+            getPrediction(coords, startDate, endDate);
+        });
+        
+        async function getPrediction(coords, startDate, endDate) {
+            const loader = document.getElementById('loader');
+            const resultImage = document.getElementById('socMap');
+            const startTonsEl = document.getElementById('startTons');
+            const endTonsEl = document.getElementById('endTons');
+            const offsetTonsEl = document.getElementById('offsetTons');
+            const valueEl = document.getElementById('value');
+
+            loader.style.display = 'block';
+            resultImage.src = '';
+            const elementsToClear = [startTonsEl, endTonsEl, offsetTonsEl, valueEl];
+            elementsToClear.forEach(el => el.textContent = '...');
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ coords: coords, start_date: startDate, end_date: endDate }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    resultImage.src = data.comparison_map_image;
+                    startTonsEl.textContent = `${data.start_megatons.toFixed(6)} Megatons (Mt)`;
+                    endTonsEl.textContent = `${data.end_megatons.toFixed(6)} Megatons (Mt)`;
+                    
+                    const offset = data.carbon_offset_megatons;
+                    const offsetSign = offset > 0 ? '+' : '';
+                    offsetTonsEl.textContent = `${offsetSign}${offset.toFixed(6)} Megatons (Mt)`;
+                    offsetTonsEl.parentElement.style.color = offset >= 0 ? '#27ae60' : '#c0392b';
+
+                    valueEl.textContent = `$${data.offset_value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('Failed to connect to the backend server. Make sure it is running.');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

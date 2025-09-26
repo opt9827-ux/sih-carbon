@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background-color: #f4f7f6; 
+            margin: 0;
+        }
+        .form-container { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            width: 100%;
+            max-width: 400px; 
+        }
+        h2 { 
+            text-align: center; 
+            color: #333; 
+            margin-top: 0;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            color: #555;
+            font-weight: bold;
+        }
+        input[type="email"], input[type="password"], input[type="text"] { 
+            width: 95%; 
+            padding: 12px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            font-size: 1em;
+        }
+        .radio-group { 
+            display: flex; 
+            justify-content: space-around; 
+            margin-top: 10px;
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            font-size: 1.1em; 
+            font-weight: bold;
+            cursor: pointer; 
+            transition: background-color 0.3s;
+        }
+        button:hover { 
+            background-color: #2980b9; 
+        }
+        .message { 
+            text-align: center; 
+            margin-top: 20px; 
+        }
+        a { 
+            color: #3498db; 
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Create Your Account</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="wallet_address">Your Wallet Address (Optional)</label>
+                <input type="text" id="wallet_address" name="wallet_address" placeholder="0x...">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>I am a:</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="role" value="farmer" checked> Farmer</label>
+                    <label><input type="radio" name="role" value="company"> Company</label>
+                </div>
+            </div>
+            <button type="submit">Sign Up</button>
+        </form>
+        <div class="message">
+            Already have an account? <a href="{{ url_for('login') }}">Log In</a>
+        </div>
+    </div>
+</body>
+</html>

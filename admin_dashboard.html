@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            padding: 40px; 
+            background-color: #f8f9fa;
+            margin: 0;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 20px; 
+            margin-bottom: 20px; 
+        }
+        .header h2 {
+            margin: 0;
+            color: #333;
+        }
+        a { 
+            color: #3498db; 
+            text-decoration: none; 
+            font-weight: bold;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 20px; 
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+            font-size: 0.9em;
+        }
+        th { 
+            background-color: #f2f2f2; 
+        }
+        tr:nth-child(even) { 
+            background-color: #f9f9f9; 
+        }
+        td { 
+            word-break: break-all; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Admin Dashboard - All Validations</h2>
+            <a href="{{ url_for('logout') }}">Log Out</a>
+        </div>
+        <h3>Welcome, {{ user.email }}!</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Report ID</th>
+                    <th>Farmer Email</th>
+                    <th>Validation Date</th>
+                    <th>Offset (Megatons)</th>
+                    <th>Value ($)</th>
+                    <th>Blockchain Tx Hash</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for validation in validations %}
+                <tr>
+                    <td>{{ validation.id }}</td>
+                    <td>{{ validation.user.email }}</td>
+                    <td>{{ validation.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ "%.6f"|format(validation.offset_megatons) }} Mt</td>
+                    <td>${{ "%.2f"|format(validation.offset_value) }}</td>
+                    <td>{{ validation.transaction_hash or 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
